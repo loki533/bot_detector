@@ -1,8 +1,8 @@
 import sqlite3
-from datetime import datetime
 from passlib.hash import argon2
 from db import DB_PATH
 from logger import log_attempt
+from detector import is_suspicious
 
 print("USING DB:", DB_PATH)
 
@@ -22,26 +22,24 @@ if result is None:
     print("User not found")
     status = "FAIL"
 else:
-    stored_hash = result[0]   
+    stored_hash = result[0]
 
-    if argon2.verify(password, stored_hash):
-        print("Successful login")
-        status = "SUCCESS"
-    else:
-        print("Wrong password")
+    try:
+        if argon2.verify(password, stored_hash):
+            print("Successful login")
+            status = "SUCCESS"
+        else:
+            print("Wrong password")
+            status = "FAIL"
+    except ValueError:
+        print("Invalid password hash")
         status = "FAIL"
 
-# log the attempt
 log_attempt(username, status)
 
-# show logs (debug)
-cursor.execute("SELECT * FROM logs")
-rows = cursor.fetchall()
+if is_suspicious(username):
+    print("Too many failed attempts. Possible bot detected!")
 
-if rows:
-    print("\nLogs:")
-    for row in rows:
-        print(row)
 
 conn.commit()
 conn.close()
