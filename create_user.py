@@ -1,6 +1,8 @@
 import sqlite3
 import os
 from passlib.hash import bcrypt
+from passlib.hash import argon2
+
 
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
 DB_PATH = os.path.join(BASE_DIR, "auth.db")
@@ -11,7 +13,7 @@ cursor = conn.cursor()
 username = input("Enter the username: ")
 password = input("Enter the password: ")
 
-password_hashed = bcrypt.hash(password[:72])
+password_hashed = argon2.hash(password)
 
 try:
     cursor.execute(

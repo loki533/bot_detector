@@ -1,7 +1,8 @@
 import sqlite3
-from passlib.hash import bcrypt
 from datetime import datetime
+from passlib.hash import argon2
 from db import DB_PATH
+from logger import log_attempt
 
 print("USING DB:", DB_PATH)
 
@@ -21,27 +22,26 @@ if result is None:
     print("User not found")
     status = "FAIL"
 else:
-    if bcrypt.verify(password[:72], result[0]):
+    stored_hash = result[0]   
+
+    if argon2.verify(password, stored_hash):
         print("Successful login")
         status = "SUCCESS"
     else:
         print("Wrong password")
         status = "FAIL"
 
-timestamp = datetime.now().isoformat()
+# log the attempt
+log_attempt(username, status)
 
-cursor.execute(
-    "INSERT INTO logs (username, timestamp, source, status) VALUES (?, ?, ?, ?)",
-    (username, timestamp, "CLI", status)
-)
+# show logs (debug)
+cursor.execute("SELECT * FROM logs")
+rows = cursor.fetchall()
 
-cursor.execute("SELECT * from logs")
-result = cursor.fetchall()
-
-if result:
-    for result in result:
-        print(result)
-
+if rows:
+    print("\nLogs:")
+    for row in rows:
+        print(row)
 
 conn.commit()
 conn.close()
